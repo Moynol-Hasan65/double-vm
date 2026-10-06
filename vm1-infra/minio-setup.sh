@@ -22,7 +22,8 @@ done
 
 if [[ "${MINIO_ACCESS_KEY}" == "your_access_key" ]]; then
     echo "Provisioning MinIO access credentials..."
-    MC_IMAGE="quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z"
+    # pgsty/minio ships mc, so reuse the already-pulled server image.
+    MC_IMAGE="pgsty/minio:RELEASE.2026-08-04T00-00-00Z"
     MC_NET=$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}' cyberwise-minio)
 
     MC_OUTPUT=""
