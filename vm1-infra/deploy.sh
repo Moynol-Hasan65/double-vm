@@ -30,6 +30,26 @@ set_env() {
     sed -i "s|^$1=.*|$1=$(sed_escape "$2")|" .env
 }
 
+# Private IP MySQL (3306) and MinIO (9000) are published on — VM2 connects to it.
+# Detected from the default route's source address on every run; on a multi-NIC
+# VM override it: VM1_PRIVATE_IP=10.0.0.5 ./deploy.sh
+if [[ -z "${VM1_PRIVATE_IP:-}" ]]; then
+    VM1_PRIVATE_IP=$(ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p')
+fi
+if [[ ! "${VM1_PRIVATE_IP:-}" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
+    echo "ERROR: could not detect this VM's private IP."
+    echo "  Pass it explicitly: VM1_PRIVATE_IP=<ip from 'ip -4 addr'> ./deploy.sh"
+    exit 1
+fi
+# Docker can only publish on an address this VM actually has.
+if command -v ip &>/dev/null && ! ip -o -4 addr show | grep -qw "inet ${VM1_PRIVATE_IP}"; then
+    echo "ERROR: ${VM1_PRIVATE_IP} is not assigned to any interface on this VM."
+    echo "  Use the private IP shown by: ip -4 addr"
+    exit 1
+fi
+export VM1_PRIVATE_IP
+echo "Using VM1 private IP: ${VM1_PRIVATE_IP}"
+
 if [[ ! -f .env ]]; then
     if [[ ! -f .env.example ]]; then
         echo "ERROR: .env.example not found."
@@ -38,27 +58,14 @@ if [[ ! -f .env ]]; then
 
     echo "No .env found — running first-time setup."
 
-    read -rp "Enter this VM's private IP (the address VM2 will connect to): " VM1_IP_INPUT
-    if [[ ! "$VM1_IP_INPUT" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
-        echo "ERROR: '${VM1_IP_INPUT}' is not an IPv4 address."
-        exit 1
-    fi
-    # Docker can only publish on an address this VM actually has.
-    if command -v ip &>/dev/null && ! ip -o -4 addr show | grep -qw "inet ${VM1_IP_INPUT}"; then
-        echo "ERROR: ${VM1_IP_INPUT} is not assigned to any interface on this VM."
-        echo "  Use the private IP shown by: ip -4 addr"
-        exit 1
-    fi
-
     cp .env.example .env
 
     echo "Generating passwords..."
-    set_env VM1_PRIVATE_IP "$VM1_IP_INPUT"
     set_env MYSQL_ROOT_PASSWORD "$(gen_password)"
     set_env MYSQL_PASSWORD "$(gen_password)"
     set_env MINIO_ROOT_PASSWORD "$(gen_password)"
 
-    echo "✓ .env created — VM1 IP set to ${VM1_IP_INPUT}, 3 passwords generated."
+    echo "✓ .env created — 3 passwords generated."
 fi
 
 echo ""
