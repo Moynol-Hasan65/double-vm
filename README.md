@@ -30,7 +30,7 @@ sudo usermod -aG docker $USER
 | VM2 | 3000 (web app + landing page) | users / targets |
 | VM2 | 10081 (User API), 10082 (LMS gRPC), 10091 (metrics) | as needed |
 
-On VM1, MySQL and MinIO are published only on the private IP you enter during setup. The MinIO console (9001) is bound to `127.0.0.1` only. The MySQL `root` account accepts connections only from inside its container, so VM2 always connects as the app user.
+On VM1, MySQL and MinIO are published only on the private IP that `deploy.sh` detects. The MinIO console (9001) is bound to `127.0.0.1` only. The MySQL `root` account accepts connections only from inside its container, so VM2 always connects as the app user.
 
 Example with `ufw` on VM1:
 
@@ -54,7 +54,7 @@ cd installer-2vm/vm1-infra
 
 On the first run, there's no `.env` yet, so the script:
 
-1. Asks for VM1's private IP. This must be an address on one of the VM's interfaces, because Docker binds to it.
+1. Detects VM1's private IP from the default route (on every run, not stored in `.env`). On a VM with several interfaces, set it yourself: `VM1_PRIVATE_IP=10.0.0.5 ./deploy.sh`. It must be an address on one of the VM's interfaces, because Docker binds to it.
 2. Copies `.env.example` to `.env` and generates `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD` and `MINIO_ROOT_PASSWORD` (10-character random passwords).
 3. Starts MySQL and MinIO and creates a MinIO service account (see `minio-setup.sh`). If that fails, it falls back to the root credentials.
 4. Waits until MySQL is healthy. The healthcheck uses TCP, so it only passes after `init-db/` has created `cyberwise_lms` and `cyberwise_phish`.
