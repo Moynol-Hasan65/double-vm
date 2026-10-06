@@ -10,9 +10,10 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    # Bound to VM1's private IP only — firewall it to VM2's IP.
+    # Bound to VM1's private IP only (exported by deploy.sh; loopback if run
+    # without it, so a bare `docker compose up` never exposes it) — firewall it to VM2's IP.
     ports:
-      - "${VM1_PRIVATE_IP}:3306:3306"
+      - "${VM1_PRIVATE_IP:-127.0.0.1}:3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       - ./init-db:/docker-entrypoint-initdb.d
@@ -33,7 +34,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "${VM1_PRIVATE_IP}:9000:9000"
+      - "${VM1_PRIVATE_IP:-127.0.0.1}:9000:9000"
       # Console on loopback only — SSH-tunnel in if needed.
       - "127.0.0.1:9001:9001"
     volumes:
