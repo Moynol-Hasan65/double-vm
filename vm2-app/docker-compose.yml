@@ -1,0 +1,50 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: cyberwise-nginx
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - user
+      - web
+      - phish
+
+  # MySQL and MinIO live on VM1 — deploy.sh checks they're reachable
+  # before this file is brought up; restart: unless-stopped covers a
+  # VM1 that comes back later.
+  user:
+    image: ${USER_IMAGE}
+    container_name: cyberwise-user
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "10081:8080"
+      - "10091:8090"
+
+  lms:
+    image: ${LMS_IMAGE}
+    container_name: cyberwise-lms
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "10082:9090"
+
+  web:
+    image: ${WEB_IMAGE}
+    container_name: cyberwise-web
+    restart: unless-stopped
+    env_file: .env
+
+  phish:
+    image: ${PHISH_IMAGE}
+    container_name: cyberwise-phish
+    restart: unless-stopped
+    volumes:
+      - ./phish/config.json:/opt/gophish/config.json:ro
+
+networks:
+  default:
+    driver: bridge
