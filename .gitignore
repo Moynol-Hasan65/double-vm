@@ -1,0 +1,5 @@
+vm1-infra/.env
+vm1-infra/vm2-shared.env
+vm2-app/.env
+vm2-app/vm2-shared.env
+vm2-app/phish/config.json
