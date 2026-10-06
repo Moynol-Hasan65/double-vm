@@ -27,7 +27,9 @@ services:
       retries: 10
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-02-07T23-21-09Z
+    # Official minio/minio images are no longer publicly pullable (401 on quay.io
+    # and Docker Hub); pgsty/minio is a community build of the same server.
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
     container_name: cyberwise-minio
     restart: unless-stopped
     environment:
