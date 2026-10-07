@@ -5,7 +5,7 @@ The same flow as `installer-1vm-simple`, split across two VMs. Each VM has one `
 | VM | Folder | Runs |
 |----|--------|------|
 | VM1 (infra) | `vm1-infra/` | MySQL, MinIO |
-| VM2 (app)   | `vm2-app/`   | nginx, User, LMS, Web, Gophish |
+| VM2 (app)   | `vm2-app/`   | nginx, User, LMS, Web, Phish |
 
 Copy the whole `installer-2vm/` folder to both VMs. On each one, you only use its own subfolder.
 
@@ -100,7 +100,7 @@ On VM2, the only values left to edit by hand in `.env` are `SUPER_ADMIN_EMAIL` /
 
 `API_URL` must stay `http://cyberwise-user:8080/api/v1`, never the VM's public IP. The `web` container reads it server-side, and a container can't reliably reach its own host's published port.
 
-The setup handles Gophish the same way as the single-VM installer. Gophish generates its own admin API key at first boot and stores it in `cyberwise_phish.users` on VM1. The `user` service reads the key from there, so `.env` holds no Gophish key.
+The setup handles Phish the same way as the single-VM installer. Phish generates its own admin API key at first boot and stores it in `cyberwise_phish.users` on VM1. The `user` service reads the key from there, so `.env` holds no Phish key.
 
 Plain HTTP, no TLS. This is the POC setup; see "Adding TLS later" below.
 
@@ -121,7 +121,7 @@ docker exec cyberwise-mysql sh -c 'exec mysqldump --all-databases -uroot -p"$MYS
 docker exec -i cyberwise-mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < backup-2026-01-01.sql
 ```
 
-Don't restore only one of these databases. Restoring only `cyberwise_phish` (or only `cyberwise_user`) desyncs each company's per-tenant Gophish key, stored in `cyberwise_user.company`, from Gophish's own `users` table. Every Gophish call then fails with "Invalid API key" until the two are back in sync.
+Don't restore only one of these databases. Restoring only `cyberwise_phish` (or only `cyberwise_user`) desyncs each company's per-tenant Phish key, stored in `cyberwise_user.company`, from Phish's own `users` table. Every Phish call then fails with "Invalid API key" until the two are back in sync.
 
 To back up MinIO objects, use `mc mirror` against `cyberwise-minio`.
 
@@ -136,22 +136,22 @@ This is a data migration, not a fresh install. Carry the existing identity over 
 5. Copy `vm2-shared.env` to VM2 and run `./deploy.sh`. If you're carrying over the old app `.env`, keep its `JWT_SECRET`, `LICENSE_SECRET` and `PHISH_WEBHOOK_SECRET`.
 6. If the old deployment had MinIO objects, migrate them with `mc mirror`.
 
-Gophish needs nothing extra. The restored `cyberwise_phish.users` table already holds the admin key, and Gophish's bootstrap skips creating a new admin.
+Phish needs nothing extra. The restored `cyberwise_phish.users` table already holds the admin key, and Phish's bootstrap skips creating a new admin.
 
 ## Service URLs
 
 | Service | URL |
 |---------|-----|
 | Web App | `http://<VM2-HOST>:3000` |
-| Gophish landing page | `http://<VM2-HOST>:3000/landing` |
+| Phish landing page | `http://<VM2-HOST>:3000/landing` |
 | User API | `http://<VM2-HOST>:10081` |
 | User Metrics | `http://<VM2-HOST>:10091/actuator/prometheus` |
 | LMS gRPC | `<VM2-HOST>:10082` |
 | MinIO Console | `http://127.0.0.1:9001` on VM1 (`ssh -L 9001:127.0.0.1:9001 <VM1>`) |
 
-The Gophish admin UI is not published. Nobody signs in to it directly; everything goes through the `user` API.
+The Phish admin UI is not published. Nobody signs in to it directly; everything goes through the `user` API.
 
-The web app and the Gophish landing page share port 3000 through nginx. Requests under `/landing/...` go to Gophish, and everything else goes to the web app.
+The web app and the Phish landing page share port 3000 through nginx. Requests under `/landing/...` go to Phish, and everything else goes to the web app.
 
 To give the landing page its own subdomain once you have a real domain:
 
